@@ -1,18 +1,39 @@
 # engineering-practices-hw-1
-Выбранный пакетный менеджер -> poetry
-Установить poetry можно при помощи pip:
+Install poetry:
+```
 pip install poetry
-
-# для первичной установки зависимостей
-poetry install
+```
 # для обновления зависимостей
+```
 poetry update
-
-Выбранный форматтер -> black
-poetry add --dev black==19.10b0
-
-flake
-
-isort
-
-pre-commit
+```
+Install formatters and linters -> black, flake, isort
+```
+poetry add --dev black
+```
+```
+poetry add --dev flake
+```
+```
+poetry add --dev isort
+```
+Install pre-commit:
+```
+poetry add pre-commit
+```
+[Virtual enviroment]  
+```
+poetry shell
+```
+Black: 
+```
+poetry run black <path to your file> 
+```
+Isort:
+```
+poetry run isort <path to your file> 
+```
+Flake8:
+```
+poetry run flake8 <path to your file> 
+```
