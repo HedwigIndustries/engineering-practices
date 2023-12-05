@@ -5,10 +5,10 @@ pip install poetry
 
 # для первичной установки зависимостей
 poetry install
-# для обновления зависимостей 
+# для обновления зависимостей
 poetry update
 
-Выбранный форматтер -> black 
+Выбранный форматтер -> black
 poetry add --dev black==19.10b0
 
 flake

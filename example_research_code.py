@@ -1,16 +1,10 @@
 import math
-
-import numpy as np
-
-from random import random
-
-import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
-import psutil as psutil
 import time
 
-start = time.time()
+import matplotlib.pyplot as plt
+import numpy as np
+
+start_time = time.time()
 
 
 def linear_regression_func(x, w):
@@ -23,28 +17,33 @@ def generate_func(x):
     return 2 + 5 * math.sin(2 * x)
 
 
-def generate_sample(start, count, step):
-    x = start
+def generate_sample(_start, _count, _step):
+    x = _start
     i = 0
-    while i < count:
+    while i < _count:
         i += 1
-        yield generate_func(x) + np.random.uniform(-0.4, 0.4) * np.random.uniform(0, 0.8)
-        x += step
+        yield (generate_func(x) + get_rand(-0.4, 0.4) * get_rand(0, 0.8))
+        x += _step
 
 
+def get_rand(a, b):
+    return np.random.uniform(a, b)
+
+
+start = 0.2
 count = 100
 step = 0.1
-start = 0.2
 X = np.arange(start, count * step + start, step)
 Y = np.array([round(y, 2) for y in generate_sample(start, count, step)])
 
 Y_real = np.array([generate_func(x) for x in X])
 
 
-def get_value(x, y):
-    # return [(y[i] - sum([(x[i] ** j) * w[j] for j in range(len(w))])) ** 2 for i in range(len(x))]
+def get_value(x, y, w=None):
+    # return [(y[i] - sum([(x[i] ** j) * w[j]
+    #                  for j in range(len(w))])) ** 2 for i in range(len(x))]
     # return w[0] ** 2 - w[0] * w[1] + w[1] ** 2 + 9 * w[0] - 6 * w[1] + 20
-    return x ** 2 - x * y + y ** 2 + 9 * x - 6 * y + 20
+    return x**2 - x * y + y**2 + 9 * x - 6 * y + 20
 
 
 def get_function_points_value(x, y):
@@ -59,8 +58,9 @@ def get_sum(x, y, w):
 
 
 def get_grad(x, y, w, size):
-    # pows = np.array([x ** i for i in range(size)])
-    # return np.array([-2 * (y - np.sum(w * pows)) * pows[i] for i in range(size)])
+    # powers = np.array([x ** i for i in range(size)])
+    # return np.array([-2 * (y - np.sum(w * powers)) * powers[i]
+    #                  for i in range(size)])
     return np.array([2 * w[0] - w[1] + 9, -w[0] + 2 * w[1] - 6])
 
 
@@ -68,7 +68,7 @@ def shuffle(permutation):
     return list(np.random.permutation(permutation))
 
 
-def sth_gradient(xs, ys, w, lr, batch_size, max_iters):
+def sth_gradient(xs, ys, w, lr, _batch_size, max_iters):
     cur_w = w
     cnt_dots = len(xs)
     perm = shuffle([i for i in range(cnt_dots)])
@@ -77,15 +77,15 @@ def sth_gradient(xs, ys, w, lr, batch_size, max_iters):
     pos = 0
     grad_calc = 0
     while iters < max_iters:
-        grad = np.array([0 for i in range(len(w))])
-        if pos + batch_size - 1 >= cnt_dots:
+        grad = get_nparray(w)
+        if pos + _batch_size - 1 >= cnt_dots:
             pos = 0
             perm = shuffle(perm)
-        for j in range(pos, pos + batch_size):
+        for j in range(pos, pos + _batch_size):
             grad = grad + get_grad(xs[perm[j]], ys[perm[j]], cur_w, len(cur_w))
             grad_calc += 1
-        grad = grad / batch_size
-        pos += batch_size
+        grad = grad / _batch_size
+        pos += _batch_size
         cur_w = cur_w - lr(iters) * grad
         values += [cur_w]
         iters += 1
@@ -98,9 +98,9 @@ def momentum(cur_w, cur_momentum, grad, gamma, lr):
     return [next_w, next_momentum]
 
 
-def momentum_gradient(xs, ys, w, lr, batch_size, max_iters):
+def momentum_gradient(xs, ys, w, lr, _batch_size, max_iters):
     cur_w = w
-    cur_momentum = np.array([0.0 for i in range(len(w))])
+    cur_momentum = get_nparray(w)
     cnt_dots = len(xs)
     perm = shuffle([i for i in range(cnt_dots)])
     values = []
@@ -109,29 +109,29 @@ def momentum_gradient(xs, ys, w, lr, batch_size, max_iters):
     grad_calc = 0
     while iters < max_iters:
         grad = np.array([0.0 for i in range(len(w))])
-        if pos + batch_size - 1 >= cnt_dots:
+        if pos + _batch_size - 1 >= cnt_dots:
             pos = 0
             perm = shuffle(perm)
-        for j in range(pos, pos + batch_size):
+        for j in range(pos, pos + _batch_size):
             grad += get_grad(xs[perm[j]], ys[perm[j]], cur_w, len(cur_w))
             grad_calc += 1
-        grad /= batch_size
-        pos += batch_size
+        grad /= _batch_size
+        pos += _batch_size
         cur_w, cur_momentum = momentum(cur_w, cur_momentum, grad, 0.9, lr(iters))
         values += [cur_w]
         iters += 1
     return [cur_w, iters, grad_calc, values]
 
 
-def nesterov(cur_w, cur_momentum, grad, gamma, lr):
+def nest(cur_w, cur_momentum, grad, gamma, lr):
     next_momentum = gamma * cur_momentum + (1 - gamma) * grad
     next_w = cur_w - lr * cur_momentum
     return [next_w, next_momentum]
 
 
-def nesterov_gradient(xs, ys, w, lr, batch_size, max_iters):
+def nest_gradient(xs, ys, w, lr, _batch_size, max_iters):
     cur_w = w
-    cur_nesterov = np.array([0.0 for i in range(len(w))])
+    cur_nest = get_nparray(w)
     cnt_dots = len(xs)
     perm = shuffle([i for i in range(cnt_dots)])
     values = []
@@ -139,19 +139,28 @@ def nesterov_gradient(xs, ys, w, lr, batch_size, max_iters):
     pos = 0
     grad_calc = 0
     while iters < max_iters:
-        grad = np.array([0.0 for i in range(len(w))])
-        if pos + batch_size - 1 >= cnt_dots:
+        grad = get_nparray(w)
+        if pos + _batch_size - 1 >= cnt_dots:
             pos = 0
             perm = shuffle(perm)
-        for j in range(pos, pos + batch_size):
-            grad += get_grad(xs[perm[j]], ys[perm[j]], cur_w - lr(iters) * 0.9 * cur_nesterov, len(cur_w))
+        for j in range(pos, pos + _batch_size):
+            grad += get_grad(
+                xs[perm[j]],
+                ys[perm[j]],
+                cur_w - lr(iters) * 0.9 * cur_nest,
+                len(cur_w),
+            )
             grad_calc += 1
-        grad /= batch_size
-        pos += batch_size
-        cur_w, cur_nesterov = nesterov(cur_w, cur_nesterov, grad, 0.9, lr(iters))
+        grad /= _batch_size
+        pos += _batch_size
+        cur_w, cur_nest = nest(cur_w, cur_nest, grad, 0.9, lr(iters))
         values += [cur_w]
         iters += 1
     return [cur_w, iters, grad_calc, values]
+
+
+def get_nparray(w):
+    return np.array([0.0 for _ in range(len(w))])
 
 
 def ada_grad(cur_w, cur_grad, grad, lr):
@@ -160,9 +169,9 @@ def ada_grad(cur_w, cur_grad, grad, lr):
     return [new_w, new_grad]
 
 
-def ada_grad_gradient(xs, ys, w, lr, batch_size, max_iters):
+def ada_grad_gradient(xs, ys, w, lr, _batch_size, max_iters):
     cur_w = w
-    cur_ada_grad = np.array([0.0 for i in range(len(w))])
+    cur_ada_grad = get_nparray(w)
     cnt_dots = len(xs)
     perm = shuffle([i for i in range(cnt_dots)])
     values = [cur_w]
@@ -170,16 +179,16 @@ def ada_grad_gradient(xs, ys, w, lr, batch_size, max_iters):
     pos = 0
     grad_calc = 0
     while iters < max_iters:
-        for i in range(cnt_dots // batch_size):
-            grad = np.array([0.0 for i in range(len(w))])
-            if pos + batch_size - 1 >= cnt_dots:
+        for i in range(cnt_dots // _batch_size):
+            grad = get_nparray(w)
+            if pos + _batch_size - 1 >= cnt_dots:
                 pos = 0
                 perm = shuffle(perm)
-            for j in range(pos, pos + batch_size):
+            for j in range(pos, pos + _batch_size):
                 grad += get_grad(xs[perm[j]], ys[perm[j]], cur_w, len(cur_w))
                 grad_calc += 1
-            grad /= batch_size
-            pos += batch_size
+            grad /= _batch_size
+            pos += _batch_size
             cur_w, cur_ada_grad = ada_grad(cur_w, cur_ada_grad, -grad, lr(iters))
         values += [cur_w]
         iters += 1
@@ -192,9 +201,9 @@ def rms_prop(cur_w, cur_grad, grad, gamma, lr):
     return [new_w, new_grad]
 
 
-def rms_prop_gradient(xs, ys, w, lr, batch_size, max_iters):
+def rms_prop_gradient(xs, ys, w, lr, _batch_size, max_iters):
     cur_w = w
-    cur_prop_grad = np.array([0.0 for i in range(len(w))])
+    cur_prop_grad = get_nparray(w)
     cnt_dots = len(xs)
     perm = shuffle([i for i in range(cnt_dots)])
     values = [cur_w]
@@ -202,16 +211,16 @@ def rms_prop_gradient(xs, ys, w, lr, batch_size, max_iters):
     pos = 0
     grad_calc = 0
     while iters < max_iters:
-        for i in range(cnt_dots // batch_size):
-            grad = np.array([0.0 for i in range(len(w))])
-            if pos + batch_size - 1 >= cnt_dots:
+        for i in range(cnt_dots // _batch_size):
+            grad = get_nparray(w)
+            if pos + _batch_size - 1 >= cnt_dots:
                 pos = 0
                 perm = shuffle(perm)
-            for j in range(pos, pos + batch_size):
+            for j in range(pos, pos + _batch_size):
                 grad += get_grad(xs[perm[j]], ys[perm[j]], cur_w, len(cur_w))
                 grad_calc += 1
-            grad /= batch_size
-            pos += batch_size
+            grad /= _batch_size
+            pos += _batch_size
             cur_w, cur_prop_grad = rms_prop(cur_w, cur_prop_grad, -grad, 0.9, lr(iters))
         values += [cur_w]
         iters += 1
@@ -225,10 +234,10 @@ def adam(cur_w, cur_momentum, cur_grad, grad, beta, gamma, lr):
     return [new_w, new_momentum, new_grad]
 
 
-def adam_gradient(xs, ys, w, lr, batch_size, max_iters):
+def adam_gradient(xs, ys, w, lr, _batch_size, max_iters):
     cur_w = w
-    cur_prop_grad = np.array([0.0 for i in range(len(w))])
-    cur_momentum = np.array([0.0 for i in range(len(w))])
+    cur_prop_grad = get_nparray(w)
+    cur_momentum = get_nparray(w)
     cnt_dots = len(xs)
     perm = shuffle([i for i in range(cnt_dots)])
     values = [cur_w]
@@ -236,26 +245,30 @@ def adam_gradient(xs, ys, w, lr, batch_size, max_iters):
     pos = 0
     grad_calc = 0
     while iters < max_iters:
-        for i in range(cnt_dots // batch_size):
-            grad = np.array([0.0 for i in range(len(w))])
-            if pos + batch_size - 1 >= cnt_dots:
+        for i in range(cnt_dots // _batch_size):
+            grad = get_nparray(w)
+            if pos + _batch_size - 1 >= cnt_dots:
                 pos = 0
                 perm = shuffle(perm)
-            for j in range(pos, pos + batch_size):
+            for j in range(pos, pos + _batch_size):
                 grad += get_grad(xs[perm[j]], ys[perm[j]], cur_w, len(cur_w))
                 grad_calc += 1
-            grad /= batch_size
-            pos += batch_size
-            cur_w, cur_momentum, cur_prop_grad = adam(cur_w, cur_momentum, cur_prop_grad, -grad, 0.9, 0.9, lr(iters))
+            grad /= _batch_size
+            pos += _batch_size
+            cur_w, cur_momentum, cur_prop_grad = adam(
+                cur_w, cur_momentum, cur_prop_grad, -grad, 0.9, 0.9, lr(iters)
+            )
         values += [cur_w]
         iters += 1
     return [cur_w, iters, grad_calc, values]
 
 
-def adam_gradient_with_regularization(xs, ys, w, lr, batch_size, max_iters, l1_mode, coeff1, l2_mode, coeff2):
+def adam_gradient_with_regularization(
+    xs, ys, w, lr, _batch_size, max_iters, l1_mode, coeff1, l2_mode, coeff2
+):
     cur_w = w
-    cur_prop_grad = np.array([0.0 for i in range(len(w))])
-    cur_momentum = np.array([0.0 for i in range(len(w))])
+    cur_prop_grad = get_nparray(w)
+    cur_momentum = get_nparray(w)
     cnt_dots = len(xs)
     perm = shuffle([i for i in range(cnt_dots)])
     values = [cur_w]
@@ -263,25 +276,35 @@ def adam_gradient_with_regularization(xs, ys, w, lr, batch_size, max_iters, l1_m
     pos = 0
     grad_calc = 0
     while iters < max_iters:
-        for i in range(cnt_dots // batch_size):
-            grad = np.array([0.0 for i in range(len(w))])
-            if pos + batch_size - 1 >= cnt_dots:
+        for i in range(cnt_dots // _batch_size):
+            grad = get_nparray(w)
+            if pos + _batch_size - 1 >= cnt_dots:
                 pos = 0
                 perm = shuffle(perm)
-            for j in range(pos, pos + batch_size):
-                grad += get_grad_regularization(xs[perm[j]], ys[perm[j]], cur_w, len(cur_w),
-                                                l1_mode, coeff1, l2_mode, coeff2)
+            for j in range(pos, pos + _batch_size):
+                grad += get_grad_regularization(
+                    xs[perm[j]],
+                    ys[perm[j]],
+                    cur_w,
+                    len(cur_w),
+                    l1_mode,
+                    coeff1,
+                    l2_mode,
+                    coeff2,
+                )
                 grad_calc += 1
-            grad /= batch_size
-            pos += batch_size
-            cur_w, cur_momentum, cur_prop_grad = adam(cur_w, cur_momentum, cur_prop_grad, -grad, 0.9, 0.9, lr(iters))
+            grad /= _batch_size
+            pos += _batch_size
+            cur_w, cur_momentum, cur_prop_grad = adam(
+                cur_w, cur_momentum, cur_prop_grad, -grad, 0.9, 0.9, lr(iters)
+            )
         values += [cur_w]
         iters += 1
     return [cur_w, iters, grad_calc, values]
 
 
-def regularization_func(X, Y, w, l1_mode, coeff1, l2_mode, coeff2):
-    l = get_sum(X, Y, w)
+def regularization_func(_x, _y, w, l1_mode, alpha1, l2_mode, alpha2):
+    _l = get_sum(_x, _y, w)
     weights = 0
     for i in range(len(w)):
         if l1_mode:
@@ -289,13 +312,13 @@ def regularization_func(X, Y, w, l1_mode, coeff1, l2_mode, coeff2):
         if l2_mode:
             weights += w[i] * w[i]
     if l1_mode:
-        l += coeff2 * weights
+        _l += alpha2 * weights
     if l2_mode:
-        l += coeff1 * weights
-    return l
+        _l += alpha1 * weights
+    return _l
 
 
-def get_grad_regularization(x, y, w, size, l1_mode, coeff1, l2_mode, coeff2):
+def get_grad_regularization(x, y, w, size, l1_mode, alpha1, l2_mode, alpha2):
     grad = get_grad(x, y, w, size)
     if l1_mode:
         loss1 = 0
@@ -304,13 +327,31 @@ def get_grad_regularization(x, y, w, size, l1_mode, coeff1, l2_mode, coeff2):
                 loss1 += 1
             else:
                 loss1 += -1
-        grad += coeff1 * loss1
+        grad += alpha1 * loss1
     if l2_mode:
         loss2 = 0
         for i in range(size):
             loss2 += 2 * w[i]
-        grad += coeff2 * loss2
+        grad += alpha2 * loss2
     return grad
+
+
+def cur_method(method):
+    _test_base = method(
+        list(X), list(Y), w_start, learning_rate, batch_size, epoch_base
+    )
+    print(
+        "function:",
+        _test_base[0][0],
+        "+",
+        str(_test_base[0][1]),
+        " * x",
+        "\nepoch:",
+        _test_base[1],
+        "\ngradient_calculations:",
+        _test_base[2],
+    )
+    return _test_base
 
 
 def stage_lr(iteration):
@@ -321,8 +362,35 @@ def exp_lr(iteration):
     return math.exp(-0.05 * (iteration + 100))
 
 
-def const_lr(iteration):
+def const_lr(iteration=None):
     return 0.1
+
+
+def draw():
+    cur_test = test_adam_grad
+    res = cur_test[3]
+    points = np.array(res)
+    # print(points)
+    t = np.linspace(-20, 20, 100)
+    X_draw, Y_draw = np.meshgrid(t, t)
+    # Z_draw = np.array(get_value(X_draw, Y_draw, cur_test[0]))
+    Z_draw = np.array(get_function_points_value(X_draw, Y_draw))
+    ax = plt.subplot()
+    ax.grid()
+    # ax.contour(X_draw,
+    #            Y_draw,
+    #            Z_draw,
+    #            levels=sorted(
+    #                [get_value([p[0]], [p[1]], cur_test[0])[0]
+    #                 for p in points
+    #                 ]))
+    ax.contour(
+        X_draw, Y_draw, Z_draw, levels=sorted([get_value(p[0], p[1]) for p in points])
+    )
+    ax.plot(points[:, 0], points[:, 1], "o-")
+    plt.xlabel("Коэффициент: w[0]")
+    plt.ylabel("Коэффициент: w[1]")
+    plt.show()
 
 
 w_start = np.array([5, 5])
@@ -337,31 +405,16 @@ epoch_adam = 8
 l1_coef = 20
 l2_coef = 20
 
-# test_base = sth_gradient(list(X), list(Y), w_start, learning_rate, batch_size, epoch_base)
-# print("function:", test_base[0][0], '+', str(test_base[0][1]) + " * x",
-#       "\nepoch:", test_base[1],
-#       "\ngradient_calculations:", test_base[2])
+test_base = cur_method(sth_gradient)
 
-# test_momentum = momentum_gradient(list(X), list(Y), w_start, learning_rate, batch_size, epoch_momentum)
-# print("function:", test_momentum[0][0], '+', str(test_momentum[0][1]) + " * x",
-#       "\nepoch:", test_momentum[1],
-#       "\ngradient_calculations:", test_momentum[2])
-
-# test_nesterov = nesterov_gradient(list(X), list(Y), w_start, learning_rate, batch_size, epoch_nesterov)
-# print("function:", test_nesterov[0][0], '+', str(test_nesterov[0][1]) + " * x",
-#       "\nepoch:", test_nesterov[1],
-#       "\ngradient_calculations:", test_nesterov[2])
-
-# test_ada_grad = ada_grad_gradient(list(X), list(Y), w_start, learning_rate, batch_size, epoch_ada_grad)
-# print("function:", test_ada_grad[0][0], '+', str(test_ada_grad[0][1]) + " * x",
-#       "\nepoch:", test_ada_grad[1],
-#       "\ngradient_calculations:", test_ada_grad[2])
+# test_momentum = test_base(momentum)
 #
-# test_prop_grad = rms_prop_gradient(list(X), list(Y), w_start, learning_rate, batch_size, epoch_prop_grad)
-# print("function:", test_prop_grad[0][0], '+', str(test_prop_grad[0][1]) + " * x",
-#       "\nepoch:", test_prop_grad[1],
-#       "\ngradient_calculations:", test_prop_grad[2])
-
+# test_nesterov = test_method(nest_gradient)
+#
+# test_ada_grad = test_method(ada_grad_gradient)
+#
+# test_prop_grad = test_method(rms_prop_gradient)
+#
 # test_adam_grad_with_regularization_L1 = adam_gradient_with_regularization(
 #     list(X), list(Y), w_start, learning_rate,
 #     batch_size, epoch_adam,
@@ -376,58 +429,48 @@ l2_coef = 20
 #     list(X), list(Y), w_start, learning_rate,
 #     batch_size, epoch_adam,
 #     True, l1_coef, True, l2_coef)
-# #
-
-test_adam_grad = adam_gradient(list(X), list(Y), w_start, learning_rate, batch_size, epoch_adam)
-print("function:", test_adam_grad[0][0], '+', str(test_adam_grad[0][1]) + " * x", "\nepoch:", test_adam_grad[1],
-      "\ngradient_calculations:", test_adam_grad[2])
-
-# print("function template:")
-# for i in range(len(test_adam_grad_with_regularization[0])):
-#     print(test_adam_grad_with_regularization[0][i], "+ w ^", i, " ")
+#
+test_adam_grad = cur_method(adam_gradient)
 
 # plt.scatter(X, Y, alpha=0.4)
 # plt.plot(X, Y_real, 'g', linewidth=2.0)
-# Y_current1 = np.array([linear_regression_func(x, test_adam_grad[0]) for x in X])
+# Y_current1 = np.array([
+#     linear_regression_func(x, test_adam_grad[0])
+#     for x in X
+# ])
 # plt.plot(X, Y_current1, 'b', linewidth=2.0)
-
+#
 # Y_current1 = np.array([linear_regression_func(x, test_momentum[0]) for x in X])
 # plt.plot(X, Y_current1, 'b', linewidth=2.0)
-# Y_current2 = np.array([linear_regression_func(x, test_adam_grad_with_regularization_L1[0]) for x in X])
+# Y_current2 = np.array([
+#     linear_regression_func(x, test_adam_grad_with_regularization_L1[0])
+#     for x in X
+# ])
 # plt.plot(X, Y_current2, 'r', linewidth=2.0)
-# Y_current3 = np.array([linear_regression_func(x, test_adam_grad_with_regularization_L2[0]) for x in X])
+# Y_current3 = np.array([
+#     linear_regression_func(x, test_adam_grad_with_regularization_L2[0])
+#     for x in X
+# ])
 # plt.plot(X, Y_current3, 'g', linewidth=2.0)
-# Y_current4 = np.array([linear_regression_func(x, test_adam_grad_with_regularization_Elastic[0]) for x in X])
+# Y_current4 = np.array([
+#     linear_regression_func(x, test_adam_grad_with_regularization_Elastic[0])
+#     for x in X
+# ])
 # plt.plot(X, Y_current4, 'y', linewidth=2.0)
 # print("Base ADAM Loss(blue):",
 #       get_sum(X, Y, test_adam_grad[0]))
 # print("L1 ADAM Loss(red):",
-#       regularization_func(X, Y, test_adam_grad_with_regularization_L1[0], True, l1_coef, False, l2_coef))
+#       regularization_func(X, Y, test_adam_grad_with_regularization_L1[0],
+#                           True, l1_coef, False, l2_coef))
 # print("L2 ADAM Loss(green):",
-#       regularization_func(X, Y, test_adam_grad_with_regularization_L2[0], False, l1_coef, True, l2_coef))
+#       regularization_func(X, Y, test_adam_grad_with_regularization_L2[0],
+#                           False, l1_coef, True, l2_coef))
 # print("Elastic ADAM Loss(yellow):",
-#       regularization_func(X, Y, test_adam_grad_with_regularization_Elastic[0], True, l1_coef, True, l2_coef))
-
-# draw level lines and gradient descent path
-cur_test = test_adam_grad
-res = cur_test[3]
-points = np.array(res)
-# print(points)
-t = np.linspace(-20, 20, 100)
-X_draw, Y_draw = np.meshgrid(t, t)
-# Z_draw = np.array(get_value(X_draw, Y_draw, cur_test[0]))
-Z_draw = np.array(get_function_points_value(X_draw, Y_draw))
-ax = plt.subplot()
-ax.grid()
-# ax.contour(X_draw, Y_draw, Z_draw, levels=sorted([get_value([p[0]], [p[1]], cur_test[0])[0] for p in points]))
-ax.contour(X_draw, Y_draw, Z_draw, levels=sorted([get_value(p[0], p[1]) for p in points]))
-ax.plot(points[:, 0], points[:, 1], 'o-')
-plt.xlabel("Коэффициент: w[0]")
-plt.ylabel("Коэффициент: w[1]")
-
-# end
+#       regularization_func(X, Y, test_adam_grad_with_regularization_Elastic[0],
+#                           True, l1_coef, True, l2_coef))
+#
+draw()
 
 # print(psutil.virtual_memory())
 # end = time.time()
-# print("время ", end - start)
-plt.show()
+# print("time:", end - start)
