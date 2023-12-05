@@ -3,7 +3,7 @@ Install poetry:
 ```
 pip install poetry
 ```
-# для обновления зависимостей
+For update dependencies in 'toml'
 ```
 poetry update
 ```
