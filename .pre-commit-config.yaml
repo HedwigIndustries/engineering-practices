@@ -1,17 +1,20 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
+    files: '.hw-1/*'
     rev: v4.5.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
 
   - repo: https://github.com/psf/black
+    files: '.hw-1/*'
     rev: 23.11.0
     hooks:
       - id: black
         language_version: python3.12
 
   - repo: https://github.com/pycqa/isort
+    files: '.hw-1/*'
     rev: 5.12.0
     hooks:
       - id: isort
