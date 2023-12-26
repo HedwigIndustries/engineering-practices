@@ -1,0 +1,5 @@
+outs:
+- md5: 076a208a8346074a15c8093f788a6754
+  size: 1875
+  hash: md5
+  path: time_series_predict_example.py
